@@ -1,3 +1,4 @@
+
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const statusSpan = document.getElementById('status');
@@ -22,6 +23,29 @@ const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
 let validPlates = [];
 let currentPlate = '';
 let isScanning = false; // Status, ob der Scan läuft
+
+// Funktion zur Verbindungsprüfung
+const checkGoogleSheetsConnection = () => {
+    fetch(GOOGLE_SHEETS_API_URL, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${API_KEY}`,
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log('Verbindung zu Google Tabellen erfolgreich.');
+            statusSpan.textContent = 'Verbindung zu Google Tabellen hergestellt.';
+        } else {
+            console.error('Verbindung zu Google Tabellen fehlgeschlagen:', response.statusText);
+            statusSpan.textContent = 'Keine Verbindung zu Google Tabellen möglich.';
+        }
+    })
+    .catch(error => {
+        console.error('Fehler beim Verbinden zu Google Tabellen:', error);
+        statusSpan.textContent = 'Fehler bei der Verbindung zu Google Tabellen.';
+    });
+};
 
 // Lade erlaubte Kennzeichen
 fetch('valid_plates.json')
@@ -145,6 +169,9 @@ const openNewScanDialog = () => {
     analyzeFrame(); // Startet den Scan erneut
   };
 };
+
+// Rufe die Verbindungsprüfung auf
+checkGoogleSheetsConnection();
 
 // Starte den ersten Scan
 analyzeFrame();
