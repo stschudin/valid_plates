@@ -22,8 +22,47 @@ const openStartScanDialog = () => {
     startButton.style.marginRight = '10px';
     startButton.onclick = () => {
         document.body.removeChild(startScanDialog);
-        isScanning = false; // Setze den Status für die Erkennung
-        analyzeFrame(); // Starte den Scan
+        isScanning = true; // Setze den Status für die Erkennung
+
+        // Starte den Kamerazugriff und den OCR-Prozess
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then((stream) => {
+              const video = document.getElementById('video');
+              video.srcObject = stream;
+              video.play();
+
+              const canvas = document.getElementById('canvas');
+              const context = canvas.getContext('2d');
+
+              const analyzeFrame = () => {
+                  if (!isScanning) return; // Verhindert mehrfaches Scannen
+
+                  canvas.width = video.videoWidth;
+                  canvas.height = video.videoHeight;
+                  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                  const imageData = canvas.toDataURL('image/png');
+
+                  // OCR-Prozess mit Tesseract.js simulieren (Tesseract.js muss korrekt eingebunden sein)
+                  Tesseract.recognize(imageData, 'eng').then(({ data: { text } }) => {
+                      const detectedPlate = text.trim();
+
+                      if (validPlates.includes(detectedPlate)) {
+                          document.body.style.backgroundColor = 'green';
+                          openStartScanDialog(); // Dialog erneut öffnen
+                      } else {
+                          document.body.style.backgroundColor = 'red';
+                      }
+                  });
+              };
+
+              // Starte den OCR-Scan zyklisch
+              setInterval(analyzeFrame, 1000);
+          })
+          .catch((err) => {
+              console.error('Kamerazugriff verweigert:', err);
+              alert('Kamera konnte nicht gestartet werden.');
+          });
     };
 
     const cancelButton = document.createElement('button');
@@ -59,6 +98,15 @@ const openStartScanDialog = () => {
     startScanDialog.appendChild(cancelButton);
     document.body.appendChild(startScanDialog);
 };
+
+// Lade erlaubte Kennzeichen aus valid_plates.json
+let validPlates = [];
+fetch('valid_plates.json')
+  .then(response => response.json())
+  .then(data => {
+      validPlates = data;
+  })
+  .catch(error => console.error('Fehler beim Laden der Liste:', error));
 
 // Rufe die neue Funktion anstelle der Verbindung zu Google Sheets auf
 openStartScanDialog();
