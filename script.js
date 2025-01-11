@@ -27,6 +27,7 @@ async function activateCamera(deviceId) {
       video: { deviceId: { exact: deviceId } },
     });
     videoElement.srcObject = stream;
+    videoElement.style.display = "block"; // Video-Element sichtbar machen
   } catch (error) {
     console.error("Kamera konnte nicht aktiviert werden:", error);
   }
