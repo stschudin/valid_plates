@@ -16,11 +16,17 @@
     <span id="detected-plate"></span>
   </div>
   <div id="dialog" class="hidden">
-    <h2>Weitere Daten hinzufügen</h2>
-    <label for="name">Name:</label>
-    <input type="text" id="name" placeholder="Name eingeben">
-    <label for="reason">Grund:</label>
-    <input type="text" id="reason" placeholder="Grund eingeben">
+    <h2>Unberechtigtes Kennzeichen erkannt</h2>
+    <p>Wollen Sie dieses Kennzeichen speichern?</p>
+    <button id="yesButton">Ja</button>
+    <button id="noButton">Nein</button>
+  </div>
+  <div id="formDialog" class="hidden">
+    <h2>Daten hinzufügen</h2>
+    <label for="email">E-Mail-Adresse:</label>
+    <input type="email" id="email" placeholder="E-Mail eingeben">
+    <label for="fullName">Vorname & Name:</label>
+    <input type="text" id="fullName" placeholder="Vorname & Name eingeben">
     <button id="submitData">Daten speichern</button>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>

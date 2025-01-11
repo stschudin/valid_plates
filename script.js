@@ -1,17 +1,27 @@
+
+// const SPREADSHEET_ID = '1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s';
+// const GOOGLE_SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=USER_ENTERED`;
+// const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
+
+
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const statusSpan = document.getElementById('status');
 const detectedPlateSpan = document.getElementById('detected-plate');
 const dialog = document.getElementById('dialog');
-const nameInput = document.getElementById('name');
-const reasonInput = document.getElementById('reason');
+const formDialog = document.getElementById('formDialog');
+const yesButton = document.getElementById('yesButton');
+const noButton = document.getElementById('noButton');
 const submitButton = document.getElementById('submitData');
+const emailInput = document.getElementById('email');
+const fullNameInput = document.getElementById('fullName');
 
-const SPREADSHEET_ID = '1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s';
+const SPREADSHEET_ID = 1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s;
 const GOOGLE_SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=USER_ENTERED`;
-const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
+const API_KEY = AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY;
 
 let validPlates = [];
+let currentPlate = ''; // Speichert das aktuell erkannte Kennzeichen
 
 // Lade erlaubte Kennzeichen aus JSON
 fetch('valid_plates.json')
@@ -56,28 +66,52 @@ const checkLicensePlate = (plate) => {
     return;
   }
 
+  currentPlate = plate; // Speichere das aktuell erkannte Kennzeichen
+
   if (validPlates.includes(plate)) {
     document.body.style.backgroundColor = 'green';
     statusSpan.textContent = 'Berechtigt:';
   } else {
     document.body.style.backgroundColor = 'red';
     statusSpan.textContent = 'Nicht berechtigt:';
-    saveUnauthorizedPlate(plate); // Speichere nicht berechtigtes Kennzeichen
+    openConfirmationDialog(); // Öffne die Abfrage
   }
 
   detectedPlateSpan.textContent = plate;
 };
 
-// Nicht berechtigtes Kennzeichen speichern und Dialog öffnen
-const saveUnauthorizedPlate = (plate) => {
+// Öffne die Abfrage
+const openConfirmationDialog = () => {
   dialog.classList.remove('hidden');
 
-  submitButton.onclick = () => {
-    const name = nameInput.value;
-    const reason = reasonInput.value;
+  // "Ja"-Button: Öffne das Formular
+  yesButton.onclick = () => {
+    dialog.classList.add('hidden');
+    openFormDialog();
+  };
 
+  // "Nein"-Button: Schließe den Dialog
+  noButton.onclick = () => {
+    dialog.classList.add('hidden');
+  };
+};
+
+// Öffne das Formular
+const openFormDialog = () => {
+  formDialog.classList.remove('hidden');
+
+  submitButton.onclick = () => {
+    const email = emailInput.value;
+    const fullName = fullNameInput.value;
+
+    if (!email || !fullName) {
+      alert('Bitte alle Felder ausfüllen.');
+      return;
+    }
+
+    // Daten an Google Sheets senden
     const data = {
-      values: [[plate, name, reason, new Date().toLocaleString()]],
+      values: [[email, fullName, currentPlate]],
     };
 
     fetch(GOOGLE_SHEETS_API_URL, {
@@ -90,9 +124,9 @@ const saveUnauthorizedPlate = (plate) => {
     })
       .then(() => {
         alert('Daten erfolgreich gespeichert!');
-        dialog.classList.add('hidden');
-        nameInput.value = '';
-        reasonInput.value = '';
+        formDialog.classList.add('hidden');
+        emailInput.value = '';
+        fullNameInput.value = '';
       })
       .catch((error) => {
         console.error('Fehler beim Speichern:', error);
