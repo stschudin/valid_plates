@@ -1,31 +1,29 @@
-
-// const SPREADSHEET_ID = '1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s';
-// const GOOGLE_SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=USER_ENTERED`;
-// const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
-
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const statusSpan = document.getElementById('status');
 const detectedPlateSpan = document.getElementById('detected-plate');
 const dialog = document.getElementById('dialog');
 const formDialog = document.getElementById('formDialog');
+const newScanDialog = document.getElementById('newScanDialog');
 const alertDialog = document.getElementById('alertDialog');
 const yesButton = document.getElementById('yesButton');
 const noButton = document.getElementById('noButton');
 const okButton = document.getElementById('okButton');
 const saveButton = document.getElementById('saveButton');
+const newScanButton = document.getElementById('newScanButton');
 const emailInput = document.getElementById('email');
 const fullNameInput = document.getElementById('fullName');
 const licensePlateInput = document.getElementById('licensePlate');
 
-const SPREADSHEET_ID = 1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s;
+const SPREADSHEET_ID = '1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s';
 const GOOGLE_SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=USER_ENTERED`;
-const API_KEY = AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY;
+const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
 
 let validPlates = [];
-let currentPlate = ''; // Speichert das aktuell erkannte Kennzeichen
+let currentPlate = '';
+let isScanning = false; // Status, ob der Scan läuft
 
-// Lade erlaubte Kennzeichen aus JSON
+// Lade erlaubte Kennzeichen
 fetch('valid_plates.json')
   .then(response => response.json())
   .then(data => {
@@ -44,8 +42,11 @@ navigator.mediaDevices
     statusSpan.textContent = 'Kamera konnte nicht gestartet werden.';
   });
 
-// Texterkennung ausführen
+// Texterkennung
 const analyzeFrame = () => {
+  if (isScanning) return; // Verhindert mehrfaches Scannen
+  isScanning = true;
+
   const context = canvas.getContext('2d');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -59,55 +60,53 @@ const analyzeFrame = () => {
   });
 };
 
-// Abgleich mit erlaubten Kennzeichen
+// Abgleich
 const checkLicensePlate = (plate) => {
+  currentPlate = plate;
+
   if (!plate) {
     statusSpan.textContent = 'Kein Kennzeichen erkannt.';
     detectedPlateSpan.textContent = '';
     document.body.style.backgroundColor = 'black';
+    isScanning = false;
     return;
   }
 
-  currentPlate = plate; // Speichere das aktuell erkannte Kennzeichen
-
+  detectedPlateSpan.textContent = plate;
   if (validPlates.includes(plate)) {
     document.body.style.backgroundColor = 'green';
     statusSpan.textContent = 'Berechtigt:';
+    openNewScanDialog();
   } else {
     document.body.style.backgroundColor = 'red';
     statusSpan.textContent = 'Nicht berechtigt:';
-    openConfirmationDialog(); // Öffne die Abfrage
+    openConfirmationDialog();
   }
-
-  detectedPlateSpan.textContent = plate;
 };
 
-// Öffne die Abfrage
+// Dialoge
 const openConfirmationDialog = () => {
   dialog.classList.remove('hidden');
 
-  // "Ja"-Button: Öffne das Formular
   yesButton.onclick = () => {
     dialog.classList.add('hidden');
     openFormDialog();
   };
 
-  // "Nein"-Button: Zeige die Meldung
   noButton.onclick = () => {
     dialog.classList.add('hidden');
     alertDialog.classList.remove('hidden');
   };
 };
 
-// Schließe die Meldung
 okButton.onclick = () => {
   alertDialog.classList.add('hidden');
+  openNewScanDialog();
 };
 
-// Öffne das Formular
 const openFormDialog = () => {
   formDialog.classList.remove('hidden');
-  licensePlateInput.value = currentPlate; // Kennzeichen ins Formular einfügen
+  licensePlateInput.value = currentPlate;
 
   saveButton.onclick = () => {
     const email = emailInput.value;
@@ -118,11 +117,7 @@ const openFormDialog = () => {
       return;
     }
 
-    // Daten an Google Sheets senden
-    const data = {
-      values: [[email, fullName, currentPlate]],
-    };
-
+    const data = { values: [[email, fullName, currentPlate]] };
     fetch(GOOGLE_SHEETS_API_URL, {
       method: 'POST',
       headers: {
@@ -136,12 +131,20 @@ const openFormDialog = () => {
         formDialog.classList.add('hidden');
         emailInput.value = '';
         fullNameInput.value = '';
+        openNewScanDialog();
       })
-      .catch((error) => {
-        console.error('Fehler beim Speichern:', error);
-      });
+      .catch((error) => console.error('Fehler beim Speichern:', error));
   };
 };
 
-// Wiederholtes Scannen (alle 2 Sekunden)
-setInterval(analyzeFrame, 2000);
+const openNewScanDialog = () => {
+  newScanDialog.classList.remove('hidden');
+  newScanButton.onclick = () => {
+    newScanDialog.classList.add('hidden');
+    isScanning = false; // Scan wieder aktivieren
+    analyzeFrame(); // Startet den Scan erneut
+  };
+};
+
+// Starte den ersten Scan
+analyzeFrame();
