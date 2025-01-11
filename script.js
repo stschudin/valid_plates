@@ -1,4 +1,4 @@
-// Updated JavaScript file with trivial camera initialization and preserved OCR workflow.
+// Updated JavaScript file with debugging and robust error handling for OCR process.
 const openStartScanDialog = () => {
     const startScanDialog = document.createElement('div');
     startScanDialog.id = 'startScanDialog';
@@ -66,7 +66,10 @@ const startCamera = () => {
             video.srcObject = stream;
             video.play();
 
-            startOCRProcess(video);
+            video.addEventListener('loadedmetadata', () => {
+                console.log("Kamera erfolgreich initialisiert.");
+                startOCRProcess(video);
+            });
         })
         .catch((err) => {
             console.error("Kamera konnte nicht gestartet werden:", err);
@@ -81,25 +84,39 @@ const startOCRProcess = (video) => {
     const analyzeFrame = () => {
         if (!isScanning) return;
 
+        if (!video.videoWidth || !video.videoHeight) {
+            console.warn("Das Videoelement liefert keine Frames.");
+            return;
+        }
+
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const imageData = canvas.toDataURL('image/png');
+        console.log("Frame erfasst, wird zur OCR-Analyse gesendet.");
 
-        Tesseract.recognize(imageData, 'eng').then(({ data: { text } }) => {
-            const detectedPlate = text.trim();
+        Tesseract.recognize(imageData, 'eng')
+            .then(({ data: { text } }) => {
+                const detectedPlate = text.trim();
+                console.log("OCR-Ergebnis:", detectedPlate);
 
-            const isValidPlate = validPlates.some((plate) => isSimilar(plate, detectedPlate));
+                const isValidPlate = validPlates.some((plate) => isSimilar(plate, detectedPlate));
 
-            if (isValidPlate) {
-                document.body.style.backgroundColor = 'green';
-                openStartScanDialog();
-            } else {
-                document.body.style.backgroundColor = 'red';
-                showErrorFeedback("Kennzeichen nicht erkannt oder ungültig.");
-            }
-        });
+                if (isValidPlate) {
+                    console.log("Gültiges Kennzeichen erkannt:", detectedPlate);
+                    document.body.style.backgroundColor = 'green';
+                    isScanning = false;
+                    openStartScanDialog();
+                } else {
+                    console.log("Ungültiges Kennzeichen erkannt:", detectedPlate);
+                    document.body.style.backgroundColor = 'red';
+                    showErrorFeedback("Kennzeichen nicht erkannt oder ungültig.");
+                }
+            })
+            .catch((err) => {
+                console.error("Fehler bei der OCR-Analyse:", err);
+            });
     };
 
     setInterval(analyzeFrame, 1000);
