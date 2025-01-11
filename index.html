@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kennzeichenerkennung</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <h1>Kennzeichenerkennung</h1>
+  <video id="video" autoplay></video>
+  <canvas id="canvas"></canvas>
+  <div id="result">
+    <span id="status">Warten auf Erkennung...</span>
+    <span id="detected-plate"></span>
+  </div>
+  <div id="dialog" class="hidden">
+    <h2>Weitere Daten hinzufügen</h2>
+    <label for="name">Name:</label>
+    <input type="text" id="name" placeholder="Name eingeben">
+    <label for="reason">Grund:</label>
+    <input type="text" id="reason" placeholder="Grund eingeben">
+    <button id="submitData">Daten speichern</button>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
