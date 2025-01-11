@@ -1,37 +1,46 @@
-// Aktualisierte JavaScript-Datei mit erweiterten Debugging-Informationen und gerätebasierter Kameraauswahl
-const startCamera = () => {
-    navigator.mediaDevices.enumerateDevices()
-        .then((devices) => {
-            const videoDevices = devices.filter((device) => device.kind === 'videoinput');
-            if (videoDevices.length === 0) {
-                console.error("Keine Kameras verfügbar.");
-                alert("Keine Kameras verfügbar. Bitte überprüfen Sie Ihre Kameraeinstellungen.");
-                return;
-            }
 
-            console.log("Gefundene Kameras:", videoDevices.map((device) => ({ label: device.label, deviceId: device.deviceId })));
+const videoElement = document.getElementById("video");
+const cameraSelect = document.getElementById("cameraSelect");
+const startCameraButton = document.getElementById("startCamera");
 
-            const rearCamera = videoDevices.find((device) => device.label.toLowerCase().includes('back'));
-            if (rearCamera) {
-                console.log("Rückseitenkamera ausgewählt:", rearCamera.label);
-                return navigator.mediaDevices.getUserMedia({ video: { deviceId: rearCamera.deviceId } });
-            } else {
-                console.warn("Keine Rückseitenkamera gefunden. Verwende erste verfügbare Kamera.");
-                return navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDevices[0].deviceId } });
-            }
-        })
-        .then((stream) => {
-            const video = document.getElementById('video');
-            video.srcObject = stream;
-            video.play();
+// Funktion, um verfügbare Kameras aufzulisten
+async function listCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === "videoinput");
 
-            video.addEventListener('loadedmetadata', () => {
-                console.log("Kamera erfolgreich initialisiert: Maße:", video.videoWidth, video.videoHeight);
-                startOCRProcess(video);
-            });
-        })
-        .catch((err) => {
-            console.error("Fehler beim Starten der Kamera:", err);
-            alert("Bitte überprüfen Sie Ihre Kameraeinstellungen. Es konnte keine Kamera gestartet werden.");
-        });
-};
+    videoDevices.forEach((device, index) => {
+      const option = document.createElement("option");
+      option.value = device.deviceId;
+      option.text = device.label || `Kamera ${index + 1}`;
+      cameraSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Fehler beim Abrufen der Kameras:", error);
+  }
+}
+
+// Funktion, um eine ausgewählte Kamera zu aktivieren
+async function activateCamera(deviceId) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: deviceId } },
+    });
+    videoElement.srcObject = stream;
+  } catch (error) {
+    console.error("Kamera konnte nicht aktiviert werden:", error);
+  }
+}
+
+// Ereignislistener für den Kamera-Start-Button
+startCameraButton.addEventListener("click", () => {
+  const selectedCameraId = cameraSelect.value;
+  if (selectedCameraId) {
+    activateCamera(selectedCameraId);
+  } else {
+    alert("Bitte wählen Sie eine Kamera aus.");
+  }
+});
+
+// Kameras initial laden
+listCameras();
