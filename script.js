@@ -1,4 +1,4 @@
-// Updated JavaScript file with camera access improvements and better error handling.
+// Updated JavaScript file with trivial camera initialization and preserved OCR workflow.
 const openStartScanDialog = () => {
     const startScanDialog = document.createElement('div');
     startScanDialog.id = 'startScanDialog';
@@ -23,7 +23,7 @@ const openStartScanDialog = () => {
         document.body.removeChild(startScanDialog);
         isScanning = true; // Setze den Status für die Erkennung
 
-        startCameraWithFallback();
+        startCamera();
     };
 
     const cancelButton = document.createElement('button');
@@ -59,26 +59,22 @@ const openStartScanDialog = () => {
     document.body.appendChild(startScanDialog);
 };
 
-const startCameraWithFallback = () => {
-    navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: "environment" } })
-        .then((stream) => startCameraStream(stream))
-        .catch((err) => {
-            console.warn("Rückseitenkamera nicht verfügbar. Wechsle zur Frontkamera.", err);
-            return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+const startCamera = () => {
+    navigator.mediaDevices.getUserMedia({ video: true }) // Triviale Kamera-Initialisierung
+        .then((stream) => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            video.play();
+
+            startOCRProcess(video);
         })
-        .then((stream) => startCameraStream(stream))
         .catch((err) => {
-            console.error("Kamerazugriff verweigert oder Fehler:", err);
-            alert("Die Kamera konnte nicht gestartet werden. Überprüfen Sie Ihre Berechtigungen.");
+            console.error("Kamera konnte nicht gestartet werden:", err);
+            alert("Bitte überprüfen Sie Ihre Kameraeinstellungen und Berechtigungen.");
         });
 };
 
-const startCameraStream = (stream) => {
-    const video = document.getElementById('video');
-    video.srcObject = stream;
-    video.play();
-
+const startOCRProcess = (video) => {
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
 
