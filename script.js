@@ -18,9 +18,9 @@ const emailInput = document.getElementById('email');
 const fullNameInput = document.getElementById('fullName');
 const licensePlateInput = document.getElementById('licensePlate');
 
-const SPREADSHEET_ID = '1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s';
+const SPREADSHEET_ID = 1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s;
 const GOOGLE_SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=USER_ENTERED`;
-const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
+const API_KEY = AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY;
 
 let validPlates = [];
 let currentPlate = ''; // Speichert das aktuell erkannte Kennzeichen
