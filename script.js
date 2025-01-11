@@ -1,4 +1,4 @@
-// Neue Abfrage-Dialog-Funktion mit Ja/Nein-Buttons
+// Updated JavaScript file with camera access improvements and better error handling.
 const openStartScanDialog = () => {
     const startScanDialog = document.createElement('div');
     startScanDialog.id = 'startScanDialog';
@@ -23,7 +23,6 @@ const openStartScanDialog = () => {
         document.body.removeChild(startScanDialog);
         isScanning = true; // Setze den Status für die Erkennung
 
-        // Starte den Kamerazugriff mit Fallback
         startCameraWithFallback();
     };
 
@@ -50,7 +49,6 @@ const openStartScanDialog = () => {
         goodbyeMessage.appendChild(goodbyeText);
         document.body.appendChild(goodbyeMessage);
 
-        // Blockiere die PWA durch Entfernen der Benutzeroberfläche
         document.body.innerHTML = '';
         document.body.appendChild(goodbyeMessage);
     };
@@ -61,23 +59,21 @@ const openStartScanDialog = () => {
     document.body.appendChild(startScanDialog);
 };
 
-// Funktion, um die Kamera zu starten, mit Rückfall auf Frontkamera
 const startCameraWithFallback = () => {
     navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: { exact: "environment" } } })
+        .getUserMedia({ video: { facingMode: "environment" } })
         .then((stream) => startCameraStream(stream))
-        .catch(() => {
-            console.warn("Rückseitenkamera nicht verfügbar. Wechsle zur Frontkamera.");
+        .catch((err) => {
+            console.warn("Rückseitenkamera nicht verfügbar. Wechsle zur Frontkamera.", err);
             return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
         })
         .then((stream) => startCameraStream(stream))
         .catch((err) => {
-            console.error("Kamerazugriff verweigert:", err);
-            alert("Kamera konnte nicht gestartet werden.");
+            console.error("Kamerazugriff verweigert oder Fehler:", err);
+            alert("Die Kamera konnte nicht gestartet werden. Überprüfen Sie Ihre Berechtigungen.");
         });
 };
 
-// Funktion, um den Kamerastream zu starten
 const startCameraStream = (stream) => {
     const video = document.getElementById('video');
     video.srcObject = stream;
@@ -87,25 +83,22 @@ const startCameraStream = (stream) => {
     const context = canvas.getContext('2d');
 
     const analyzeFrame = () => {
-        if (!isScanning) return; // Verhindert mehrfaches Scannen
+        if (!isScanning) return;
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Bildvorverarbeitung: Schärfen und Kontrastverstärkung (optional erweiterbar)
+
         const imageData = canvas.toDataURL('image/png');
 
-        // OCR-Prozess mit Tesseract.js simulieren (Tesseract.js muss korrekt eingebunden sein)
         Tesseract.recognize(imageData, 'eng').then(({ data: { text } }) => {
             const detectedPlate = text.trim();
 
-            // Fuzzy-Matching zur Validierung
             const isValidPlate = validPlates.some((plate) => isSimilar(plate, detectedPlate));
 
             if (isValidPlate) {
                 document.body.style.backgroundColor = 'green';
-                openStartScanDialog(); // Dialog erneut öffnen
+                openStartScanDialog();
             } else {
                 document.body.style.backgroundColor = 'red';
                 showErrorFeedback("Kennzeichen nicht erkannt oder ungültig.");
@@ -113,11 +106,9 @@ const startCameraStream = (stream) => {
         });
     };
 
-    // Starte den OCR-Scan zyklisch
     setInterval(analyzeFrame, 1000);
 };
 
-// Fuzzy-Matching-Funktion
 const isSimilar = (plate1, plate2) => {
     const levenshtein = (a, b) => {
         const matrix = [];
@@ -141,10 +132,9 @@ const isSimilar = (plate1, plate2) => {
         }
         return matrix[b.length][a.length];
     };
-    return levenshtein(plate1, plate2) <= 2; // Toleranz von 2 Zeichenabweichungen
+    return levenshtein(plate1, plate2) <= 2;
 };
 
-// Fehler-Feedback anzeigen
 const showErrorFeedback = (message) => {
     const errorDialog = document.createElement('div');
     errorDialog.id = 'errorDialog';
@@ -173,7 +163,6 @@ const showErrorFeedback = (message) => {
     document.body.appendChild(errorDialog);
 };
 
-// Lade erlaubte Kennzeichen aus valid_plates.json
 let validPlates = [];
 fetch('valid_plates.json')
     .then((response) => response.json())
@@ -182,5 +171,4 @@ fetch('valid_plates.json')
     })
     .catch((error) => console.error('Fehler beim Laden der Liste:', error));
 
-// Rufe die neue Funktion anstelle der Verbindung zu Google Sheets auf
 openStartScanDialog();
