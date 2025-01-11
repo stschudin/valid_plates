@@ -1,4 +1,4 @@
-// Aktualisierte JavaScript-Datei mit verbesserten OCR-Handling und Fehlermeldungsbehebung.
+// Aktualisierte JavaScript-Datei mit Rückseitenkamera-Funktionalität und verbesserten OCR-Ergebnissen
 const openStartScanDialog = () => {
     const startScanDialog = document.createElement('div');
     startScanDialog.id = 'startScanDialog';
@@ -62,20 +62,35 @@ const openStartScanDialog = () => {
 let intervalId; // Variable für die setInterval-ID
 
 const startCamera = () => {
-    navigator.mediaDevices.getUserMedia({ video: true }) // Triviale Kamera-Initialisierung
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } }) // Rückseitenkamera priorisieren
         .then((stream) => {
             const video = document.getElementById('video');
             video.srcObject = stream;
             video.play();
 
             video.addEventListener('loadedmetadata', () => {
-                console.log("Kamera erfolgreich initialisiert.");
+                console.log("Rückseitenkamera erfolgreich initialisiert.");
                 startOCRProcess(video);
             });
         })
         .catch((err) => {
-            console.error("Kamera konnte nicht gestartet werden:", err);
-            alert("Bitte überprüfen Sie Ihre Kameraeinstellungen und Berechtigungen.");
+            console.warn("Rückseitenkamera nicht verfügbar. Wechsel zur Frontkamera.", err);
+            // Fallback auf die Frontkamera
+            return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        })
+        .then((stream) => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            video.play();
+
+            video.addEventListener('loadedmetadata', () => {
+                console.log("Frontkamera erfolgreich initialisiert (Fallback).");
+                startOCRProcess(video);
+            });
+        })
+        .catch((err) => {
+            console.error("Keine Kamera verfügbar:", err);
+            alert("Bitte überprüfen Sie Ihre Kameraeinstellungen.");
         });
 };
 
@@ -102,10 +117,18 @@ const startOCRProcess = (video) => {
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const imageData = canvas.toDataURL('image/png');
+        // Bildvorverarbeitung: Graustufen und Kontrast
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            const avg = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
+            imageData.data[i] = imageData.data[i + 1] = imageData.data[i + 2] = avg; // Graustufen
+        }
+        context.putImageData(imageData, 0, 0);
+
+        const processedImage = canvas.toDataURL('image/png');
         console.log("Frame erfasst, wird zur OCR-Analyse gesendet.");
 
-        Tesseract.recognize(imageData, 'eng')
+        Tesseract.recognize(processedImage, 'eng')
             .then(({ data: { text } }) => {
                 const detectedPlate = text.trim();
                 console.log("OCR-Ergebnis:", detectedPlate);
@@ -116,14 +139,13 @@ const startOCRProcess = (video) => {
                     console.log("Gültiges Kennzeichen erkannt:", detectedPlate);
                     document.body.style.backgroundColor = 'green';
                     isScanning = false;
-                    clearInterval(intervalId); // OCR-Schleife stoppen
+                    clearInterval(intervalId);
                     openStartScanDialog();
                 } else {
                     console.log("Ungültiges Kennzeichen erkannt:", detectedPlate);
-                    document.body.style.backgroundColor = 'red';
-                    isScanning = false; // Scanning stoppen
-                    clearInterval(intervalId); // OCR-Schleife stoppen
-                    showErrorFeedback("Kennzeichen nicht erkannt oder ungültig.");
+                    isScanning = false;
+                    clearInterval(intervalId);
+                    showErrorFeedback(`Ungültiges Kennzeichen erkannt: ${detectedPlate}`);
                 }
             })
             .catch((err) => {
@@ -180,9 +202,9 @@ const showErrorFeedback = (message) => {
     const closeButton = document.createElement('button');
     closeButton.textContent = 'Schließen';
     closeButton.onclick = () => {
-        document.body.removeChild(errorDialog); // Dialog entfernen
-        isScanning = true; // Scanning wieder aktivieren, falls nötig
-        intervalId = setInterval(analyzeFrame, 2000); // OCR-Schleife neu starten
+        document.body.removeChild(errorDialog);
+        isScanning = true;
+        intervalId = setInterval(analyzeFrame, 2000);
     };
 
     errorDialog.appendChild(errorText);
