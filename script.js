@@ -1,4 +1,4 @@
-// Updated JavaScript file with debugging and robust error handling for OCR process.
+// Aktualisierte JavaScript-Datei mit verbesserten OCR-Handling und Fehlermeldungsbehebung.
 const openStartScanDialog = () => {
     const startScanDialog = document.createElement('div');
     startScanDialog.id = 'startScanDialog';
@@ -59,6 +59,8 @@ const openStartScanDialog = () => {
     document.body.appendChild(startScanDialog);
 };
 
+let intervalId; // Variable für die setInterval-ID
+
 const startCamera = () => {
     navigator.mediaDevices.getUserMedia({ video: true }) // Triviale Kamera-Initialisierung
         .then((stream) => {
@@ -84,6 +86,13 @@ const startOCRProcess = (video) => {
     const analyzeFrame = () => {
         if (!isScanning) return;
 
+        if (typeof Tesseract === 'undefined') {
+            clearInterval(intervalId);
+            console.error('Tesseract.js ist nicht definiert. Der OCR-Prozess wird gestoppt.');
+            alert('Tesseract.js ist nicht verfügbar. Überprüfen Sie die Einbindung der Bibliothek.');
+            return;
+        }
+
         if (!video.videoWidth || !video.videoHeight) {
             console.warn("Das Videoelement liefert keine Frames.");
             return;
@@ -107,10 +116,13 @@ const startOCRProcess = (video) => {
                     console.log("Gültiges Kennzeichen erkannt:", detectedPlate);
                     document.body.style.backgroundColor = 'green';
                     isScanning = false;
+                    clearInterval(intervalId); // OCR-Schleife stoppen
                     openStartScanDialog();
                 } else {
                     console.log("Ungültiges Kennzeichen erkannt:", detectedPlate);
                     document.body.style.backgroundColor = 'red';
+                    isScanning = false; // Scanning stoppen
+                    clearInterval(intervalId); // OCR-Schleife stoppen
                     showErrorFeedback("Kennzeichen nicht erkannt oder ungültig.");
                 }
             })
@@ -119,7 +131,7 @@ const startOCRProcess = (video) => {
             });
     };
 
-    setInterval(analyzeFrame, 1000);
+    intervalId = setInterval(analyzeFrame, 2000); // Start der OCR-Schleife
 };
 
 const isSimilar = (plate1, plate2) => {
@@ -168,7 +180,9 @@ const showErrorFeedback = (message) => {
     const closeButton = document.createElement('button');
     closeButton.textContent = 'Schließen';
     closeButton.onclick = () => {
-        document.body.removeChild(errorDialog);
+        document.body.removeChild(errorDialog); // Dialog entfernen
+        isScanning = true; // Scanning wieder aktivieren, falls nötig
+        intervalId = setInterval(analyzeFrame, 2000); // OCR-Schleife neu starten
     };
 
     errorDialog.appendChild(errorText);
