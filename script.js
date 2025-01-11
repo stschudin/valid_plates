@@ -3,22 +3,24 @@
 // const GOOGLE_SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=USER_ENTERED`;
 // const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
 
-
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const statusSpan = document.getElementById('status');
 const detectedPlateSpan = document.getElementById('detected-plate');
 const dialog = document.getElementById('dialog');
 const formDialog = document.getElementById('formDialog');
+const alertDialog = document.getElementById('alertDialog');
 const yesButton = document.getElementById('yesButton');
 const noButton = document.getElementById('noButton');
-const submitButton = document.getElementById('submitData');
+const okButton = document.getElementById('okButton');
+const saveButton = document.getElementById('saveButton');
 const emailInput = document.getElementById('email');
 const fullNameInput = document.getElementById('fullName');
+const licensePlateInput = document.getElementById('licensePlate');
 
-const SPREADSHEET_ID = 1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s;
+const SPREADSHEET_ID = '1etsbtMkBMQFY6rJbL2d_20-8iatmq64oU6bajvGj29s';
 const GOOGLE_SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=USER_ENTERED`;
-const API_KEY = AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY;
+const API_KEY = 'AIzaSyDYenkUwFPBC_istj8LJAbNlBHFd7zwUgY';
 
 let validPlates = [];
 let currentPlate = ''; // Speichert das aktuell erkannte Kennzeichen
@@ -90,17 +92,24 @@ const openConfirmationDialog = () => {
     openFormDialog();
   };
 
-  // "Nein"-Button: Schließe den Dialog
+  // "Nein"-Button: Zeige die Meldung
   noButton.onclick = () => {
     dialog.classList.add('hidden');
+    alertDialog.classList.remove('hidden');
   };
+};
+
+// Schließe die Meldung
+okButton.onclick = () => {
+  alertDialog.classList.add('hidden');
 };
 
 // Öffne das Formular
 const openFormDialog = () => {
   formDialog.classList.remove('hidden');
+  licensePlateInput.value = currentPlate; // Kennzeichen ins Formular einfügen
 
-  submitButton.onclick = () => {
+  saveButton.onclick = () => {
     const email = emailInput.value;
     const fullName = fullNameInput.value;
 
